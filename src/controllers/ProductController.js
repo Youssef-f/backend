@@ -1,5 +1,6 @@
 const Product = require('../models/ProductModel');
 
+
 exports.createProduct = async (req, res) => {
   try {
     // Extract product data from the request body
