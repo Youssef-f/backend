@@ -1,35 +1,50 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/UserModel');
-const { secretKey } = require('../config');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("../models/UserModel");
+const { secretKey } = require("../config");
 
 exports.registerUser = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, address, phone_number } = req.body;
+    const { firstname, lastname, email, password, address, phone_number } =
+      req.body;
+    const is_admin = Boolean(req.body.is_admin);
 
     // Check for empty fields
-    if (!firstname || !lastname || !email || !password || !address || !phone_number) {
-        return res.status(400).json({ error: 'All fields must be filled out.' });
+    if (
+      !firstname ||
+      !lastname ||
+      !email ||
+      !password ||
+      !address ||
+      !phone_number
+    ) {
+      return res.status(400).json({ error: "All fields must be filled out." });
     }
 
     // Custom validation for firstname
     if (!/^[a-zA-Z]+$/.test(firstname)) {
-        return res.status(400).json({ error: 'First name must only contain alphabetical characters.' });
+      return res.status(400).json({
+        error: "First name must only contain alphabetical characters.",
+      });
     }
 
     // Custom validation for lastname
     if (!/^[a-zA-Z]+$/.test(lastname)) {
-        return res.status(400).json({ error: 'Last name must only contain alphabetical characters.' });
+      return res.status(400).json({
+        error: "Last name must only contain alphabetical characters.",
+      });
     }
 
     // Custom validation for email
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ error: 'Invalid email address.' });
+      return res.status(400).json({ error: "Invalid email address." });
     }
 
     // Validate password length
     if (password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters long." });
     }
 
     // Check for unique email and phoneNumber
@@ -37,13 +52,12 @@ exports.registerUser = async (req, res) => {
     const isPhoneNumberUnique = await User.findOne({ phone_number });
 
     if (isEmailUnique) {
-        return res.status(400).json({ error: 'Email is already in use.' });
+      return res.status(400).json({ error: "Email is already in use." });
     }
 
     if (isPhoneNumberUnique) {
-        return res.status(400).json({ error: 'Phone number is already in use.' });
+      return res.status(400).json({ error: "Phone number is already in use." });
     }
-
 
     // Hash the password before storing it in the database
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -55,14 +69,14 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       address,
       phone_number,
-      is_admin: false
+      is_admin: is_admin || false,
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'User registered successfully.' });
+    res.status(201).json({ message: "User registered successfully." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -76,13 +90,17 @@ exports.loginUser = async (req, res) => {
     // Check if the user exists and verify the password
     if (user && (await bcrypt.compare(password, user.password))) {
       // Create a JWT token
-      const token = jwt.sign({ userId: user._id, email: user.email }, secretKey , { expiresIn: '1h' });
+      const token = jwt.sign(
+        { userId: user._id, email: user.email },
+        secretKey,
+        { expiresIn: "1h" }
+      );
       res.status(200).json({ token, user });
     } else {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: "Invalid credentials" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
